@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 
 load_dotenv()
+CHUNK_SIZE =1000
 
 def process_urls(urls):
     """
@@ -19,13 +20,20 @@ def process_urls(urls):
    
     """
 
-   
+    
     print("Loading data")
     loader = WebBaseLoader(
         urls
     )
     data = loader.load()
 
+    print("Split text")
+    text_splitter = RecursiveCharacterTextSplitter(
+        separators=["\n\n", "\n", " ", ""],
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=20
+    )
+    docs = text_splitter.split_documents(data)
     
 if __name__ == "__main__":
     urls = ["https://www.cnbc.com/2024/12/21/how-the-federal-reserves-rate-policy-affects-mortgages.html",
