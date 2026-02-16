@@ -73,4 +73,10 @@ if __name__ == "__main__":
 
 
     process_urls(urls)
+    results = vector_store.similarity_search(
+        "30 year mortgage rate",
+        k=2
+    )
+    print(results)
+
     
