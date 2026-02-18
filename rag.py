@@ -5,6 +5,9 @@ from langchain_groq import ChatGroq
 from langchain_core.retrievers import BaseRetriever
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
@@ -63,8 +66,50 @@ def process_urls(urls):
 
     uuids = [str(uuid4()) for _ in range(len(docs))]
     vector_store.add_documents(docs, ids=uuids)
-    
 
+
+def generate_answer(query):
+    """
+    Generate answer using pure LCEL - no langchain.chains dependency
+    """
+    if not vector_store:
+        raise RuntimeError("Vector database is not initialized")
+    
+    # Get retriever
+    retriever = vector_store.as_retriever()
+    
+    # Create prompt template
+    template = """Answer the question based only on the following context:
+
+Context: {context}
+
+Question: {question}
+
+Answer the question concisely and accurately."""
+    
+    prompt = ChatPromptTemplate.from_template(template)
+    
+    # Helper function to format documents
+    def format_docs(docs):
+        return "\n\n".join(doc.page_content for doc in docs)
+    
+    # Create RAG chain using LCEL
+    rag_chain = (
+        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+    
+    # Get answer
+    answer = rag_chain.invoke(query)
+    
+    # Get source documents separately
+    source_docs = retriever.invoke(query)
+    sources = ", ".join(set([doc.metadata.get("source", "Unknown") for doc in source_docs]))
+    
+    return answer, sources
+    
 
 if __name__ == "__main__":
     urls = ["https://www.cnbc.com/2024/12/21/how-the-federal-reserves-rate-policy-affects-mortgages.html",
@@ -73,10 +118,8 @@ if __name__ == "__main__":
 
 
     process_urls(urls)
-    results = vector_store.similarity_search(
-        "30 year mortgage rate",
-        k=2
-    )
-    print(results)
+    answer, sources = generate_answer("Tell me what was the 30 year fixed mortgage rate along with the date?")
+    print(f"Answer: {answer}")
+    print(f"Sources: {sources}")
 
     
