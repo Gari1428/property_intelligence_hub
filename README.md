@@ -44,7 +44,7 @@ An application based on Retrieval-Augmented Generation (RAG) architecture that l
 
 Setup & Installation
 1. Clone the repository
-bashgit clone https://github.com/your-username/property-intelligence-hub.git
+bashgit clone (https://github.com/Gari1428/property_intelligence_hub.git)
 cd property-intelligence-hub
 2. Create and activate a virtual environment
 bashpython -m venv venv
